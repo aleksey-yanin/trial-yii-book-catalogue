@@ -27,6 +27,11 @@ $items = [
         'url' => ['/author/index'],
     ],
     [
+        // Отчёт публичный — по ТЗ доступен всем, поэтому виден и гостю.
+        'label' => 'Отчёт',
+        'url' => ['/report/top-authors'],
+    ],
+    [
         'label' => 'Добавить книгу',
         'url' => ['/book/create'],
         'visible' => $canEdit,
