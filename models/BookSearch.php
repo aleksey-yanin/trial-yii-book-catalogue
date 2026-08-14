@@ -13,8 +13,14 @@ class BookSearch extends Book
 {
     /**
      * Фильтр по автору: id выбранного автора.
+     *
+     * Без строгого типа намеренно: форма поиска отправляется методом GET, и незаполненное
+     * поле приходит пустой строкой — объявление `?int` роняет load() с TypeError.
+     * Приведением занимается правило `integer` в rules().
+     *
+     * @var int|string|null
      */
-    public ?int $authorId = null;
+    public $authorId = null;
 
     /**
      * Правила базовой модели здесь не нужны: у формы фильтра нет обязательных полей,
@@ -23,7 +29,14 @@ class BookSearch extends Book
     public function rules(): array
     {
         return [
-            [['title', 'isbn'], 'safe'],
+            // Те же соображения, что и в AuthorSearch: значения приходят из строки
+            // запроса и могут оказаться массивом, который сломает и запрос, и вывод формы.
+            [['title', 'isbn'], 'filter', 'filter' => static fn (mixed $value): string => is_scalar($value)
+                ? trim((string) $value)
+                : ''],
+            [['year', 'authorId'], 'filter', 'filter' => static fn (mixed $value): string => is_scalar($value)
+                ? trim((string) $value)
+                : ''],
             [['year', 'authorId'], 'integer'],
         ];
     }
@@ -65,11 +78,15 @@ class BookSearch extends Book
         $query->andFilterWhere(['like', 'title', $this->title]);
         $query->andFilterWhere(['like', 'isbn', $this->isbn]);
 
-        if ($this->authorId !== null) {
+        // Пустое поле формы приходит строкой, а не null, поэтому сравнение с null
+        // здесь не годится: иначе фильтр «любой автор» не нашёл бы ни одной книги.
+        $authorId = (int) $this->authorId;
+
+        if ($authorId > 0) {
             // innerJoin вместо joinWith('authors'): фильтр по связи не должен
             // конфликтовать с жадной загрузкой авторов выше.
             $query->innerJoin('{{%book_author}} ba', 'ba.book_id = {{%book}}.id')
-                ->andWhere(['ba.author_id' => $this->authorId]);
+                ->andWhere(['ba.author_id' => $authorId]);
         }
 
         return $dataProvider;

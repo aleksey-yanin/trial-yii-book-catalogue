@@ -18,6 +18,31 @@ final class AuthorSearchTest extends \Codeception\Test\Unit
         verify((new AuthorSearch())->search([])->getTotalCount())->equals(2);
     }
 
+    /**
+     * Пустая строка приходит из формы при нажатии «Найти» без фильтра.
+     */
+    public function testEmptyFilterReturnsEveryone(): void
+    {
+        $this->createAuthor('Лем', 'Станислав');
+
+        verify($this->search(''))->arrayCount(1);
+    }
+
+    /**
+     * Значение из строки запроса можно подделать массивом (?AuthorSearch[name][]=…);
+     * поиск должен это пережить, а не падать на подстановке массива в LIKE.
+     */
+    public function testSurvivesArrayInsteadOfString(): void
+    {
+        $this->createAuthor('Лем', 'Станислав');
+
+        $models = (new AuthorSearch())
+            ->search(['AuthorSearch' => ['name' => ['Лем']]])
+            ->getModels();
+
+        verify($models)->arrayCount(1);
+    }
+
     public function testFindsByLastName(): void
     {
         $this->createAuthor('Лем', 'Станислав');

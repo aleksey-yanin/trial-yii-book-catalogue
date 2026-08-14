@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use app\models\Author;
 use app\models\Book;
+use app\components\specifications\UserCanEdit;
 use app\models\BookSearch;
 use yii\data\ActiveDataProvider;
 use yii\grid\ActionColumn;
@@ -19,6 +20,8 @@ use yii\widgets\ActiveForm;
 $this->title = 'Книги';
 $this->params['breadcrumbs'][] = $this->title;
 
+$canEdit = (new UserCanEdit())->isSatisfiedByCurrentUser();
+
 $authors = ArrayHelper::map(
     Author::find()->orderBy(['last_name' => SORT_ASC, 'first_name' => SORT_ASC])->all(),
     'id',
@@ -28,7 +31,9 @@ $authors = ArrayHelper::map(
 <div class="book-index">
     <h1><?= Html::encode($this->title) ?></h1>
 
-    <p><?= Html::a('Добавить книгу', ['create'], ['class' => 'btn btn-success']) ?></p>
+    <?php if ($canEdit): ?>
+        <p><?= Html::a('Добавить книгу', ['create'], ['class' => 'btn btn-success']) ?></p>
+    <?php endif ?>
 
     <?php $form = ActiveForm::begin(['method' => 'get', 'action' => ['index']]) ?>
         <div class="row g-2 align-items-end mb-3">
@@ -79,6 +84,8 @@ $authors = ArrayHelper::map(
             ],
             [
                 'class' => ActionColumn::class,
+                // Гостю доступен только просмотр — набор кнопок задаёт та же спецификация.
+                'template' => $canEdit ? '{view} {update} {delete}' : '{view}',
                 'urlCreator' => fn (string $action, Book $model): string => (string) yii\helpers\Url::to(
                     [$action, 'id' => $model->id],
                 ),

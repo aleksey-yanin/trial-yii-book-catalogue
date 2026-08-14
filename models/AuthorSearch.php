@@ -14,13 +14,23 @@ class AuthorSearch extends Author
     /**
      * Одна строка поиска по ФИО: разделять фамилию, имя и отчество в фильтре неудобно,
      * человек вводит то, что помнит.
+     *
+     * Тип не объявлен по той же причине, что и в BookSearch: значение приходит из строки
+     * запроса и подделывается массивом (`?name[]=…`), а типизированное свойство на этом падает.
+     *
+     * @var string|string[]|null
      */
-    public ?string $name = null;
+    public $name = null;
 
     public function rules(): array
     {
         return [
-            ['name', 'safe'],
+            // Значение приходит из строки запроса и подделывается массивом
+            // (?AuthorSearch[name][]=…). Без приведения массив дошёл бы до LIKE
+            // и до вывода поля формы, где Html падает на «Array to string conversion».
+            ['name', 'filter', 'filter' => static fn (mixed $value): string => is_scalar($value)
+                ? trim((string) $value)
+                : ''],
         ];
     }
 
@@ -60,7 +70,8 @@ class AuthorSearch extends Author
             return $dataProvider;
         }
 
-        if ($this->name !== null && $this->name !== '') {
+        // К этому моменту правило filter уже привело значение к строке.
+        if ($this->name !== '') {
             $query->andWhere([
                 'or',
                 ['like', 'last_name', $this->name],

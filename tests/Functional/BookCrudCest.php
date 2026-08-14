@@ -6,11 +6,25 @@ namespace app\tests\Functional;
 
 use app\models\Author;
 use app\models\Book;
+use app\models\User;
 use app\tests\Support\FunctionalTester;
 use yii\helpers\Url;
 
 final class BookCrudCest
 {
+    /**
+     * CRUD доступен только авторизованному — вход выполняется перед каждым тестом.
+     */
+    public function _before(FunctionalTester $I): void
+    {
+        $user = new User(['username' => 'tester']);
+        $user->setPassword('secret');
+        $user->generateAuthKey();
+        $user->save();
+
+        $I->amLoggedInAs($user);
+    }
+
     public function openIndex(FunctionalTester $I): void
     {
         $I->amOnRoute('book/index');

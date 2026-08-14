@@ -4,12 +4,23 @@ declare(strict_types=1);
 
 namespace app\tests\Functional;
 
+use app\models\User;
 use app\tests\Support\FunctionalTester;
 
 final class LoginFormCest
 {
+    private const PASSWORD = 'secret';
+
+    private ?User $_user = null;
+
     public function _before(FunctionalTester $I)
     {
+        // Пользователи живут в базе, поэтому учётная запись создаётся перед каждым тестом.
+        $this->_user = new User(['username' => 'tester']);
+        $this->_user->setPassword(self::PASSWORD);
+        $this->_user->generateAuthKey();
+        $this->_user->save();
+
         $I->amOnRoute('site/login');
     }
 
@@ -21,17 +32,17 @@ final class LoginFormCest
     // demonstrates `amLoggedInAs` method
     public function internalLoginById(FunctionalTester $I)
     {
-        $I->amLoggedInAs(100);
+        $I->amLoggedInAs($this->_user->id);
         $I->amOnPage('/');
-        $I->see('Выход (admin)');
+        $I->see('Выход (tester)');
     }
 
     // demonstrates `amLoggedInAs` method
     public function internalLoginByInstance(FunctionalTester $I)
     {
-        $I->amLoggedInAs(\app\models\User::findByUsername('admin'));
+        $I->amLoggedInAs(User::findByUsername('tester'));
         $I->amOnPage('/');
-        $I->see('Выход (admin)');
+        $I->see('Выход (tester)');
     }
 
     public function loginWithEmptyCredentials(FunctionalTester $I)
@@ -45,7 +56,7 @@ final class LoginFormCest
     public function loginWithWrongCredentials(FunctionalTester $I)
     {
         $I->submitForm('#login-form', [
-            'LoginForm[username]' => 'admin',
+            'LoginForm[username]' => 'tester',
             'LoginForm[password]' => 'wrong',
         ]);
         $I->expectTo('see validations errors');
@@ -55,10 +66,10 @@ final class LoginFormCest
     public function loginSuccessfully(FunctionalTester $I)
     {
         $I->submitForm('#login-form', [
-            'LoginForm[username]' => 'admin',
-            'LoginForm[password]' => 'admin',
+            'LoginForm[username]' => 'tester',
+            'LoginForm[password]' => self::PASSWORD,
         ]);
-        $I->see('Выход (admin)');
+        $I->see('Выход (tester)');
         $I->dontSeeElement('form#login-form');
     }
 }

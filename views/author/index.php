@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use app\models\Author;
+use app\components\specifications\UserCanEdit;
 use app\models\AuthorSearch;
 use yii\data\ActiveDataProvider;
 use yii\grid\ActionColumn;
@@ -15,13 +16,17 @@ use yii\widgets\ActiveForm;
 /** @var AuthorSearch $searchModel */
 /** @var ActiveDataProvider $dataProvider */
 
+$canEdit = (new UserCanEdit())->isSatisfiedByCurrentUser();
+
 $this->title = 'Авторы';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="author-index">
     <h1><?= Html::encode($this->title) ?></h1>
 
-    <p><?= Html::a('Добавить автора', ['create'], ['class' => 'btn btn-success']) ?></p>
+    <?php if ($canEdit): ?>
+        <p><?= Html::a('Добавить автора', ['create'], ['class' => 'btn btn-success']) ?></p>
+    <?php endif ?>
 
     <?php $form = ActiveForm::begin(['method' => 'get', 'action' => ['index']]) ?>
         <div class="row g-2 align-items-end mb-3">
@@ -52,6 +57,7 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
             [
                 'class' => ActionColumn::class,
+                'template' => $canEdit ? '{view} {update} {delete}' : '{view}',
                 'urlCreator' => fn (string $action, Author $model): string => (string) Url::to(
                     [$action, 'id' => $model->id],
                 ),

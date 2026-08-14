@@ -106,7 +106,7 @@ $labelOptions = ['class' => 'form-label fw-semibold small'];
                     <?php ActiveForm::end(); ?>
 
                     <div class="text-body-secondary text-center mt-3 small">
-                        Тестовые учётные записи: <strong>admin/admin</strong> или <strong>demo/demo</strong>.<br>
+                        Учётная запись задаётся сидером: <strong>admin</strong> и пароль из ADMIN_PASSWORD.<br>
                         To modify the username/password, check <code>app\models\User::$users</code>.
                     </div>
 

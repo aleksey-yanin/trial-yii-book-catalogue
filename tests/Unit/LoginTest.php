@@ -5,31 +5,36 @@ declare(strict_types=1);
 namespace app\tests\Unit;
 
 use app\controllers\SiteController;
-use app\models\User;
 use Yii;
-use yii\base\Security;
 use yii\web\View;
 
 final class LoginTest extends \Codeception\Test\Unit
 {
-    public function testRenderLoginWrongUsername(): void
+    /**
+     * Гостю показывается вход и не показывается выход.
+     *
+     * Раньше тест логинил пустой объект User; с пользователями из базы такой ситуации
+     * не существует, поэтому проверяется то, что действительно важно, — вид меню для гостя.
+     */
+    public function testGuestSeesLoginLinkInsteadOfLogout(): void
     {
-        $controller = new SiteController(
-            'site',
-            Yii::$app,
-            new Security(),
-        );
-
+        $controller = new SiteController('site', Yii::$app);
         $view = new View(['context' => $controller]);
 
-        Yii::$app->user->login(new User());
+        // Вне HTTP-запроса Yii не может определить URI, а меню строит ссылки.
+        Yii::$app->request->setUrl('/');
 
-        $controller->actionLogin();
+        $html = $view->render('//layouts/main.php', ['content' => 'Hello World°']);
 
+        self::assertStringContainsString(
+            'Вход',
+            $html,
+            'Failed asserting that the login link is rendered for a guest.',
+        );
         self::assertStringNotContainsString(
-            'Выход (admin)',
-            $view->render('//layouts/main.php', ['content' => 'Hello World°']),
-            'Failed asserting that the logout link is not rendered for a wrong username.',
+            'Выход (',
+            $html,
+            'Failed asserting that the logout link is not rendered for a guest.',
         );
     }
 }

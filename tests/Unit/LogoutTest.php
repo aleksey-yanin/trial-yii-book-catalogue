@@ -7,40 +7,27 @@ namespace app\tests\Unit;
 use app\controllers\SiteController;
 use app\models\User;
 use Yii;
-use yii\base\Security;
-use yii\web\IdentityInterface;
 use yii\web\View;
 
 final class LogoutTest extends \Codeception\Test\Unit
 {
     public function testRenderLogoutLinkWhenUserIsLoggedIn(): void
     {
-        $user = User::findIdentity('100');
+        $user = new User(['username' => 'tester']);
+        $user->setPassword('secret');
+        $user->generateAuthKey();
+        $user->save();
 
-        $controller = new SiteController(
-            'site',
-            Yii::$app,
-            new Security(),
-        );
+        $controller = new SiteController('site', Yii::$app);
 
         $view = new View(['context' => $controller]);
-
-        self::assertNotNull(
-            $user,
-            "Failed asserting that the user identity with ID '100' exists.",
-        );
-        self::assertInstanceOf(
-            IdentityInterface::class,
-            $user,
-            "Failed asserting that the identity is an instance of 'Identity' class.",
-        );
 
         Yii::$app->user->login($user);
 
         $html = $view->render('//layouts/main.php', ['content' => 'Hello World°']);
 
         self::assertStringContainsString(
-            'Выход (admin)',
+            'Выход (tester)',
             $html,
             'Failed asserting that the logout link is rendered for a logged-in user.',
         );
@@ -55,7 +42,7 @@ final class LogoutTest extends \Codeception\Test\Unit
         $html = $view->render('//layouts/main.php', ['content' => 'Hello World°']);
 
         self::assertStringNotContainsString(
-            'Выход (admin)',
+            'Выход (tester)',
             $html,
             'Failed asserting that the logout link is not rendered after logout.',
         );

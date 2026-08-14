@@ -6,7 +6,7 @@ namespace app\tests\Unit\Models;
 
 use app\models\LoginForm;
 use Yii;
-use yii\base\Security;
+use app\models\User;
 
 final class LoginFormTest extends \Codeception\Test\Unit
 {
@@ -19,13 +19,10 @@ final class LoginFormTest extends \Codeception\Test\Unit
 
     public function testLoginNoUser()
     {
-        $this->_model = new LoginForm(
-            new Security(),
-            [
-                'username' => 'not_existing_username',
-                'password' => 'not_existing_password',
-            ],
-        );
+        $this->_model = new LoginForm([
+            'username' => 'несуществующий',
+            'password' => 'несуществующий',
+        ]);
 
         verify($this->_model->login())->false();
         verify(Yii::$app->user->isGuest)->true();
@@ -33,13 +30,12 @@ final class LoginFormTest extends \Codeception\Test\Unit
 
     public function testLoginWrongPassword()
     {
-        $this->_model = new LoginForm(
-            new Security(),
-            [
-                'username' => 'demo',
-                'password' => 'wrong_password',
-            ],
-        );
+        $this->createUser();
+
+        $this->_model = new LoginForm([
+            'username' => 'tester',
+            'password' => 'неверный пароль',
+        ]);
 
         verify($this->_model->login())->false();
         verify(Yii::$app->user->isGuest)->true();
@@ -48,16 +44,25 @@ final class LoginFormTest extends \Codeception\Test\Unit
 
     public function testLoginCorrect()
     {
-        $this->_model = new LoginForm(
-            new Security(),
-            [
-                'username' => 'demo',
-                'password' => 'demo',
-            ],
-        );
+        $this->createUser();
+
+        $this->_model = new LoginForm([
+            'username' => 'tester',
+            'password' => 'secret',
+        ]);
 
         verify($this->_model->login())->true();
         verify(Yii::$app->user->isGuest)->false();
         verify($this->_model->errors)->arrayHasNotKey('password');
+    }
+
+    private function createUser(): User
+    {
+        $user = new User(['username' => 'tester']);
+        $user->setPassword('secret');
+        $user->generateAuthKey();
+        $user->save();
+
+        return $user;
     }
 }

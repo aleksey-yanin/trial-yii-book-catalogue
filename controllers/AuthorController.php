@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace app\controllers;
 
+use app\components\specifications\UserCanEdit;
 use app\models\Author;
 use app\models\AuthorSearch;
+use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
@@ -21,6 +23,21 @@ class AuthorController extends Controller
     public function behaviors(): array
     {
         return [
+            'access' => [
+                'class' => AccessControl::class,
+                'rules' => [
+                    [
+                        'actions' => ['index', 'view'],
+                        'allow' => true,
+                    ],
+                    [
+                        'actions' => ['create', 'update', 'delete'],
+                        'allow' => true,
+                        'matchCallback' => static fn (): bool => (new UserCanEdit())
+                            ->isSatisfiedByCurrentUser(),
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::class,
                 'actions' => [

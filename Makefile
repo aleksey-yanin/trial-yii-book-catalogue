@@ -5,10 +5,12 @@ PHP := $(DC) exec -T php
 help: ## Список команд
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
 
-init: ## Первый запуск: .env, сборка образов, старт
+init: ## Первый запуск: .env, сборка образов, старт, миграции с сидером
 	@test -f .env || cp .env.example .env
 	$(DC) build
 	$(DC) up -d
+	$(MAKE) migrate
+	$(MAKE) migrate-test
 
 up: ## Поднять окружение
 	$(DC) up -d

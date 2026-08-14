@@ -29,6 +29,19 @@ final class BookSearchTest extends \Codeception\Test\Unit
         verify($models[0]->title)->equals('Солярис');
     }
 
+    /**
+     * Форма поиска отправляется методом GET, поэтому незаполненные поля приходят
+     * пустыми строками. Строгий тип свойства ронял на этом весь поиск.
+     */
+    public function testAcceptsEmptyFiltersFromForm(): void
+    {
+        $this->createBook('Солярис', 1961, '9785171183660');
+
+        $models = $this->search(['title' => '', 'year' => '', 'authorId' => '']);
+
+        verify($models)->arrayCount(1);
+    }
+
     public function testFiltersByYear(): void
     {
         $this->createBook('Солярис', 1961, '9785171183660');

@@ -5,47 +5,84 @@ declare(strict_types=1);
 namespace app\tests\Unit\Models;
 
 use app\models\User;
+use yii\base\NotSupportedException;
 
 final class UserTest extends \Codeception\Test\Unit
 {
-    public function testFindUserById()
+    public function testFindUserById(): void
     {
-        /** @var User $user */
-        $user = User::findIdentity(100);
+        $user = $this->createUser();
 
-        verify($user)->notEmpty();
-        verify($user->username)->equals('admin');
-        verify(User::findIdentity(999))->empty();
+        verify(User::findIdentity($user->id))->notEmpty();
+        verify(User::findIdentity(999999))->empty();
     }
 
-    public function testFindUserByAccessToken()
+    public function testFindUserByUsername(): void
     {
-        /** @var User $user */
-        $user = User::findIdentityByAccessToken('100-token');
+        $this->createUser();
 
-        verify($user)->notEmpty();
-        verify($user->username)->equals('admin');
-        verify(User::findIdentityByAccessToken('non-existing'))->empty();
+        verify(User::findByUsername('tester'))->notEmpty();
+        verify(User::findByUsername('не существует'))->empty();
     }
 
-    public function testFindUserByUsername()
+    public function testValidatesCorrectPassword(): void
     {
-        /** @var User $user */
-        $user = User::findByUsername('admin');
+        verify($this->createUser()->validatePassword('secret'))->true();
+    }
 
-        verify($user)->notEmpty();
-        verify(User::findByUsername('not-admin'))->empty();
+    public function testRejectsWrongPassword(): void
+    {
+        verify($this->createUser()->validatePassword('wrong'))->false();
     }
 
     /**
-     * @depends testFindUserByUsername
+     * Пароль хранится хешем, а не открытым текстом.
      */
-    public function testValidateUser()
+    public function testPasswordIsHashed(): void
     {
-        /** @var User $user */
-        $user = User::findByUsername('admin');
+        $user = $this->createUser();
 
-        verify($user->validateAuthKey('test100key'))->notEmpty();
-        verify($user->validateAuthKey('test102key'))->empty();
+        verify($user->password_hash)->notEquals('secret');
+        verify($user->password_hash)->stringStartsWith('$2y$');
+    }
+
+    public function testValidateAuthKey(): void
+    {
+        $user = $this->createUser();
+
+        verify($user->validateAuthKey($user->auth_key))->true();
+        verify($user->validateAuthKey('чужой ключ'))->false();
+    }
+
+    /**
+     * API в приложении нет: вместо молчаливого null метод обязан сообщить об ошибке
+     * конфигурации, иначе неверная настройка компонента user останется незамеченной.
+     */
+    public function testAccessTokenLoginIsNotSupported(): void
+    {
+        $this->expectException(NotSupportedException::class);
+
+        User::findIdentityByAccessToken('any-token');
+    }
+
+    public function testUsernameIsUnique(): void
+    {
+        $this->createUser();
+
+        $duplicate = new User(['username' => 'tester', 'auth_key' => 'x']);
+        $duplicate->setPassword('secret');
+
+        verify($duplicate->validate())->false();
+        verify($duplicate->hasErrors('username'))->true();
+    }
+
+    private function createUser(): User
+    {
+        $user = new User(['username' => 'tester']);
+        $user->setPassword('secret');
+        $user->generateAuthKey();
+        $user->save();
+
+        return $user;
     }
 }

@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 /** @var yii\web\View $this */
 
+use app\components\specifications\UserCanEdit;
 use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
 use yii\helpers\Html;
+
+// Пункты меню, ведущие на изменение каталога, показываются по той же спецификации,
+// что разрешает сами действия в контроллерах.
+$canEdit = (new UserCanEdit())->isSatisfiedByCurrentUser();
 
 $items = [
     [
@@ -22,8 +27,14 @@ $items = [
         'url' => ['/author/index'],
     ],
     [
+        'label' => 'Добавить книгу',
+        'url' => ['/book/create'],
+        'visible' => $canEdit,
+    ],
+    [
         'label' => 'Вход',
         'url' => ['/site/login'],
+        // Здесь речь о состоянии сессии, а не о праве — спецификация не при чём.
         'visible' => Yii::$app->user->isGuest,
     ],
     [

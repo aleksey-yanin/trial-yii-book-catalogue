@@ -27,7 +27,6 @@ parameters:
         - YII_ENV_TEST
 
     ignoreErrors:
-        - '#Unsafe usage of new static\(\).#'
         # Атрибуты DynamicModel объявляются в рантайме — статически их не видно.
         -
             message: '#Access to an undefined property yii\\base\\DynamicModel::#'

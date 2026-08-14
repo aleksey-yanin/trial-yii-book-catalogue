@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use app\components\specifications\UserCanEdit;
 use app\models\Author;
 use app\models\Book;
 use yii\helpers\Html;
@@ -16,6 +17,8 @@ $this->title = $model->fullName;
 $this->params['breadcrumbs'][] = ['label' => 'Авторы', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
+$canEdit = (new UserCanEdit())->isSatisfiedByCurrentUser();
+
 $books = new ActiveDataProvider([
     'query' => $model->getBooks()->orderBy(['year' => SORT_DESC]),
     'pagination' => ['pageSize' => 20],
@@ -24,16 +27,18 @@ $books = new ActiveDataProvider([
 <div class="author-view">
     <h1><?= Html::encode($this->title) ?></h1>
 
-    <p>
-        <?= Html::a('Редактировать', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
-        <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
-            'data' => [
-                'confirm' => 'Удалить автора «' . $model->fullName . '»? Книги останутся в каталоге.',
-                'method' => 'post',
-            ],
-        ]) ?>
-    </p>
+    <?php if ($canEdit): ?>
+        <p>
+            <?= Html::a('Редактировать', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
+            <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
+                'class' => 'btn btn-danger',
+                'data' => [
+                    'confirm' => 'Удалить автора «' . $model->fullName . '»? Книги останутся в каталоге.',
+                    'method' => 'post',
+                ],
+            ]) ?>
+        </p>
+    <?php endif ?>
 
     <?= DetailView::widget([
         'model' => $model,
