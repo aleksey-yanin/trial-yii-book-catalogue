@@ -5,6 +5,7 @@ $db = require __DIR__ . '/db.php';
 
 $config = [
     'id' => 'basic',
+    'name' => 'Каталог книг на Yii2 (тест)',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
     'container' => [
@@ -21,7 +22,12 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
+    // Интерфейс русский, поэтому встроенные сообщения валидации тоже должны быть русскими.
+    'language' => 'ru-RU',
     'components' => [
+        'coverStorage' => [
+            'class' => \app\components\CoverStorage::class,
+        ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'XqIKuESWexTfI-V63WA1UU89pAUgB1ih',

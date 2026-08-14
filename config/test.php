@@ -8,6 +8,7 @@ $db = require __DIR__ . '/test_db.php';
  */
 return [
     'id' => 'basic-tests',
+    'name' => 'Каталог книг на Yii2 (тест)',
     'basePath' => dirname(__DIR__),
     'bootstrap' => [
         \app\tests\Support\MailerBootstrap::class,
@@ -16,9 +17,14 @@ return [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
-    'language' => 'en-US',
+    'language' => 'ru-RU',
     'components' => [
         'db' => $db,
+        // Тесты не должны мусорить в web/uploads — файлы уходят в runtime.
+        'coverStorage' => [
+            'class' => \app\components\CoverStorage::class,
+            'basePath' => '@runtime/test-uploads/covers',
+        ],
         'mailer' => [
             'class' => \yii\symfonymailer\Mailer::class,
             'messageClass' => \yii\symfonymailer\Message::class,

@@ -17,7 +17,6 @@ final class LoginTest extends \Codeception\Test\Unit
         $controller = new SiteController(
             'site',
             Yii::$app,
-            Yii::$app->mailer,
             new Security(),
         );
 
@@ -28,7 +27,7 @@ final class LoginTest extends \Codeception\Test\Unit
         $controller->actionLogin();
 
         self::assertStringNotContainsString(
-            'Logout (admin)',
+            'Выход (admin)',
             $view->render('//layouts/main.php', ['content' => 'Hello World°']),
             'Failed asserting that the logout link is not rendered for a wrong username.',
         );

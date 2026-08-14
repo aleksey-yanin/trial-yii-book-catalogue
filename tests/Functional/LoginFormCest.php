@@ -15,7 +15,7 @@ final class LoginFormCest
 
     public function openLoginPage(FunctionalTester $I)
     {
-        $I->see('Login', 'h1');
+        $I->see('Вход', 'h1');
     }
 
     // demonstrates `amLoggedInAs` method
@@ -23,7 +23,7 @@ final class LoginFormCest
     {
         $I->amLoggedInAs(100);
         $I->amOnPage('/');
-        $I->see('Logout (admin)');
+        $I->see('Выход (admin)');
     }
 
     // demonstrates `amLoggedInAs` method
@@ -31,15 +31,15 @@ final class LoginFormCest
     {
         $I->amLoggedInAs(\app\models\User::findByUsername('admin'));
         $I->amOnPage('/');
-        $I->see('Logout (admin)');
+        $I->see('Выход (admin)');
     }
 
     public function loginWithEmptyCredentials(FunctionalTester $I)
     {
         $I->submitForm('#login-form', []);
         $I->expectTo('see validations errors');
-        $I->see('Username cannot be blank.');
-        $I->see('Password cannot be blank.');
+        $I->see('Необходимо заполнить «Логин».');
+        $I->see('Необходимо заполнить «Пароль».');
     }
 
     public function loginWithWrongCredentials(FunctionalTester $I)
@@ -49,7 +49,7 @@ final class LoginFormCest
             'LoginForm[password]' => 'wrong',
         ]);
         $I->expectTo('see validations errors');
-        $I->see('Incorrect username or password.');
+        $I->see('Неверный логин или пароль.');
     }
 
     public function loginSuccessfully(FunctionalTester $I)
@@ -58,7 +58,7 @@ final class LoginFormCest
             'LoginForm[username]' => 'admin',
             'LoginForm[password]' => 'admin',
         ]);
-        $I->see('Logout (admin)');
+        $I->see('Выход (admin)');
         $I->dontSeeElement('form#login-form');
     }
 }

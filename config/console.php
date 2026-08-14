@@ -5,6 +5,7 @@ $db = require __DIR__ . '/db.php';
 
 $config = [
     'id' => 'basic-console',
+    'name' => 'Каталог книг на Yii2 (тест)',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
     'controllerNamespace' => 'app\commands',
@@ -12,8 +13,16 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
         '@tests' => '@app/tests',
+        // В консольном приложении @webroot и @web не определены, а хранилище обложек
+        // адресуется теми же алиасами, что и в вебе.
+        '@webroot' => '@app/web',
+        '@web' => '/',
     ],
+    'language' => 'ru-RU',
     'components' => [
+        'coverStorage' => [
+            'class' => \app\components\CoverStorage::class,
+        ],
         'cache' => [
             'class' => \yii\caching\FileCache::class,
         ],

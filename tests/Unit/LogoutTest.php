@@ -20,7 +20,6 @@ final class LogoutTest extends \Codeception\Test\Unit
         $controller = new SiteController(
             'site',
             Yii::$app,
-            Yii::$app->mailer,
             new Security(),
         );
 
@@ -41,7 +40,7 @@ final class LogoutTest extends \Codeception\Test\Unit
         $html = $view->render('//layouts/main.php', ['content' => 'Hello World°']);
 
         self::assertStringContainsString(
-            'Logout (admin)',
+            'Выход (admin)',
             $html,
             'Failed asserting that the logout link is rendered for a logged-in user.',
         );
@@ -56,7 +55,7 @@ final class LogoutTest extends \Codeception\Test\Unit
         $html = $view->render('//layouts/main.php', ['content' => 'Hello World°']);
 
         self::assertStringNotContainsString(
-            'Logout (admin)',
+            'Выход (admin)',
             $html,
             'Failed asserting that the logout link is not rendered after logout.',
         );
