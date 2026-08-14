@@ -23,6 +23,7 @@ coverage:
   enabled: true
   include:
     - /commands/*
+    - /components/*
     - /controllers/*
     - /mail/*
     - /models/*

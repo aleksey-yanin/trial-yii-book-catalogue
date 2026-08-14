@@ -1,7 +1,7 @@
 {
-    "name": "trial/book-catalog",
+    "name": "trial/book-catalogue",
     "description": "Каталог книг на Yii2",
-    "keywords": ["yii2", "book catalog"],
+    "keywords": ["yii2", "book catalogue"],
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",

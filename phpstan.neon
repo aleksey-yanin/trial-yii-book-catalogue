@@ -4,11 +4,12 @@ parameters:
     paths:
         - assets
         - commands
+        - components
         - controllers
         - mail
+        - migrations
         - models
         - widgets
-        - tests/Acceptance
         - tests/Functional
         - tests/Unit
 
@@ -27,5 +28,9 @@ parameters:
 
     ignoreErrors:
         - '#Unsafe usage of new static\(\).#'
+        # Атрибуты DynamicModel объявляются в рантайме — статически их не видно.
+        -
+            message: '#Access to an undefined property yii\\base\\DynamicModel::#'
+            path: tests/*
 
     tmpDir: %currentWorkingDirectory%/runtime

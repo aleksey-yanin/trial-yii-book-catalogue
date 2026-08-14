@@ -40,10 +40,24 @@ coverage: ## Прогон тестов с покрытием (Xdebug включ�
 build-actors: ## Пересобрать актёров Codeception после правки *.suite.yml
 	$(PHP) vendor/bin/codecept build
 
+lint: ## Стиль кода (PHP_CodeSniffer)
+	$(PHP) vendor/bin/phpcs --standard=phpcs.xml.dist
+
+lint-fix: ## Исправить стиль автоматически
+	$(PHP) vendor/bin/phpcbf --standard=phpcs.xml.dist
+
+stan: ## Статический анализ (PHPStan)
+	$(PHP) vendor/bin/phpstan --memory-limit=-1 --no-progress
+
+check: lint stan test ## Все проверки: стиль, анализ, тесты
+
 migrate: ## Применить миграции
 	$(PHP) php yii migrate --interactive=0
+
+migrate-test: ## Применить миграции к тестовой базе
+	$(PHP) php tests/Support/bin/yii migrate --interactive=0
 
 db: ## MySQL-консоль
 	$(DC) exec mysql sh -c 'mysql -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE"'
 
-.PHONY: help init up down destroy build logs sh composer test coverage build-actors migrate db
+.PHONY: help init up down destroy build logs sh composer test coverage build-actors lint lint-fix stan check migrate migrate-test db
