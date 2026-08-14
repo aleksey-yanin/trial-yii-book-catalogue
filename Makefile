@@ -63,7 +63,10 @@ migrate-test: ## Применить миграции к тестовой баз�
 demo: ## Наполнить каталог демо-данными (make demo args=--fresh — пересоздать)
 	$(PHP) php yii demo/seed $(args)
 
+queue: ## Разобрать очередь SMS-уведомлений (разовый прогон, как по крону)
+	$(PHP) php yii sms-queue/run --verbose=1
+
 db: ## MySQL-консоль
 	$(DC) exec mysql sh -c 'mysql -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE"'
 
-.PHONY: help init up down destroy build logs sh composer test coverage build-actors lint lint-fix stan check migrate migrate-test demo db
+.PHONY: help init up down destroy build logs sh composer test coverage build-actors lint lint-fix stan check migrate migrate-test demo queue db

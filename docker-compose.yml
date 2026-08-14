@@ -24,6 +24,8 @@ services:
       DB_TEST_DSN: "mysql:host=mysql;port=3306;dbname=${DB_NAME:-book_catalogue}_test"
       DB_USERNAME: "${DB_USER:-catalogue}"
       DB_PASSWORD: "${DB_PASSWORD:-catalogue}"
+      # Ключ-эмулятор smspilot: запросы принимаются, реальные SMS не уходят.
+      SMSPILOT_API_KEY: "${SMSPILOT_API_KEY:-XXXXXXXXXXXXYYYYYYYYYYYYZZZZZZZZZZZZ}"
       YII_ENV: dev
       YII_DEBUG: "1"
     extra_hosts:

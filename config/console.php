@@ -7,7 +7,9 @@ $config = [
     'id' => 'basic-console',
     'name' => 'Каталог книг на Yii2 (тест)',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log'],
+    // smsQueue в bootstrap: именно так yii2-queue регистрирует консольный контроллер
+    // `sms-queue` — имя берётся от компонента.
+    'bootstrap' => ['log', 'smsQueue'],
     'controllerNamespace' => 'app\commands',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -23,6 +25,21 @@ $config = [
         'coverStorage' => [
             'class' => \app\components\CoverStorage::class,
         ],
+        'smsQueue' => [
+            'class' => \yii\queue\db\Queue::class,
+            'db' => 'db',
+            'tableName' => '{{%queue}}',
+            'channel' => 'sms',
+            // Постоянного воркера нет: очередь разбирает `yii sms-queue/run` по крону.
+            'mutex' => \yii\mutex\MysqlMutex::class,
+        ],
+        'smsSender' => [
+            'class' => \app\components\sms\SmsPilotClient::class,
+            'apiKey' => getenv('SMSPILOT_API_KEY') ?: 'XXXXXXXXXXXXYYYYYYYYYYYYZZZZZZZZZZZZ',
+        ],
+        'bookNotifier' => [
+            'class' => \app\components\BookNotifier::class,
+        ],
         'cache' => [
             'class' => \yii\caching\FileCache::class,
         ],
@@ -37,13 +54,17 @@ $config = [
         'db' => $db,
     ],
     'params' => $params,
-    /*
     'controllerMap' => [
-        'fixture' => [ // Fixture generation command line.
-            'class' => 'yii\faker\FixtureController',
+        'migrate' => [
+            'class' => \yii\console\controllers\MigrateController::class,
+            // Схему очереди сопровождает сам пакет: дублировать её своей миграцией —
+            // значит разойтись с ней при обновлении. Так `make migrate` поднимает всё сразу.
+            'migrationPath' => ['@app/migrations'],
+            // Миграции пакета лежат в собственном пространстве имён, поэтому подключаются
+            // через migrationNamespaces, а не как путь.
+            'migrationNamespaces' => ['yii\queue\db\migrations'],
         ],
     ],
-    */
 ];
 
 if (YII_ENV_DEV) {

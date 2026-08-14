@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace app\controllers;
 
+use Yii;
+use app\components\BookNotifier;
 use app\components\CoverStorage;
 use app\components\specifications\UserCanEdit;
 use app\models\Book;
@@ -93,6 +95,8 @@ class BookController extends Controller
 
                 // Валидация уже прошла — второй раз её гонять незачем.
                 if ($model->save(false)) {
+                    $this->notifySubscribers($model);
+
                     return $this->redirect(['view', 'id' => $model->id]);
                 }
             }
@@ -138,6 +142,17 @@ class BookController extends Controller
         $this->coverStorage->delete($cover);
 
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Уведомления ставятся в очередь здесь, а не в Book::afterSave(): сидер демо-данных
+     * создаёт полсотни книг и забил бы очередь заданиями, которые никому не нужны.
+     */
+    private function notifySubscribers(Book $book): void
+    {
+        /** @var BookNotifier $notifier */
+        $notifier = Yii::$app->get('bookNotifier');
+        $notifier->notifyAboutNewBook($book);
     }
 
     private function findModel(int $id): Book

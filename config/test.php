@@ -12,6 +12,7 @@ return [
     'basePath' => dirname(__DIR__),
     'bootstrap' => [
         \app\tests\Support\MailerBootstrap::class,
+        'smsQueue',
     ],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -24,6 +25,21 @@ return [
         'coverStorage' => [
             'class' => \app\components\CoverStorage::class,
             'basePath' => '@runtime/test-uploads/covers',
+        ],
+        'smsQueue' => [
+            'class' => \yii\queue\db\Queue::class,
+            'db' => 'db',
+            'tableName' => '{{%queue}}',
+            'channel' => 'sms',
+            // Постоянного воркера нет: очередь разбирает `yii sms-queue/run` по крону.
+            'mutex' => \yii\mutex\MysqlMutex::class,
+        ],
+        'smsSender' => [
+            'class' => \app\components\sms\SmsPilotClient::class,
+            'apiKey' => getenv('SMSPILOT_API_KEY') ?: 'XXXXXXXXXXXXYYYYYYYYYYYYZZZZZZZZZZZZ',
+        ],
+        'bookNotifier' => [
+            'class' => \app\components\BookNotifier::class,
         ],
         'mailer' => [
             'class' => \yii\symfonymailer\Mailer::class,

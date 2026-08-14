@@ -28,6 +28,21 @@ $config = [
         'coverStorage' => [
             'class' => \app\components\CoverStorage::class,
         ],
+        'smsQueue' => [
+            'class' => \yii\queue\db\Queue::class,
+            'db' => 'db',
+            'tableName' => '{{%queue}}',
+            'channel' => 'sms',
+            // Постоянного воркера нет: очередь разбирает `yii sms-queue/run` по крону.
+            'mutex' => \yii\mutex\MysqlMutex::class,
+        ],
+        'smsSender' => [
+            'class' => \app\components\sms\SmsPilotClient::class,
+            'apiKey' => getenv('SMSPILOT_API_KEY') ?: 'XXXXXXXXXXXXYYYYYYYYYYYYZZZZZZZZZZZZ',
+        ],
+        'bookNotifier' => [
+            'class' => \app\components\BookNotifier::class,
+        ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'XqIKuESWexTfI-V63WA1UU89pAUgB1ih',
