@@ -1,0 +1,8 @@
+/.env
+/vendor/
+/runtime/
+/web/assets/
+/web/uploads/
+/tests/Support/output/
+/tests/Support/_generated/
+/composer.phar
