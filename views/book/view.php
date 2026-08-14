@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use app\models\Author;
+use app\components\specifications\GuestCanSubscribe;
 use app\components\specifications\UserCanEdit;
 use app\models\Book;
 use yii\helpers\Html;
@@ -16,6 +17,7 @@ $this->params['breadcrumbs'][] = ['label' => 'Книги', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
 $canEdit = (new UserCanEdit())->isSatisfiedByCurrentUser();
+$canSubscribe = (new GuestCanSubscribe())->isSatisfiedByCurrentUser();
 $coverUrl = Yii::$app->coverStorage->getUrl($model->cover_path);
 ?>
 <div class="book-view">
@@ -51,16 +53,31 @@ $coverUrl = Yii::$app->coverStorage->getUrl($model->cover_path);
             [
                 'label' => 'Авторы',
                 'format' => 'raw',
-                'value' => static function (Book $book): string {
-                    $links = array_map(
-                        static fn (Author $author): string => Html::a(
-                            Html::encode($author->fullName),
-                            ['/author/view', 'id' => $author->id],
-                        ),
+                // Подписка именная, поэтому кнопка стоит у каждого автора книги.
+                'value' => static function (Book $book) use ($canSubscribe): string {
+                    $items = array_map(
+                        static function (Author $author) use ($canSubscribe): string {
+                            $link = Html::a(
+                                Html::encode($author->fullName),
+                                ['/author/view', 'id' => $author->id],
+                            );
+
+                            if (!$canSubscribe) {
+                                return $link;
+                            }
+
+                            return $link . ' ' . Html::button('Подписаться', [
+                                'class' => 'btn btn-sm btn-outline-primary',
+                                'data' => [
+                                    'subscription-author-id' => $author->id,
+                                    'subscription-author-name' => $author->fullName,
+                                ],
+                            ]);
+                        },
                         $book->authors,
                     );
 
-                    return $links === [] ? '—' : implode(', ', $links);
+                    return $items === [] ? '—' : implode('<br>', $items);
                 },
             ],
             [
@@ -69,4 +86,8 @@ $coverUrl = Yii::$app->coverStorage->getUrl($model->cover_path);
             ],
         ],
     ]) ?>
+
+    <?php if ($canSubscribe): ?>
+        <?= $this->render('//subscription/_modal') ?>
+    <?php endif ?>
 </div>

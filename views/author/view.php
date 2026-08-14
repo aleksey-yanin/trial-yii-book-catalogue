@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use app\components\specifications\GuestCanSubscribe;
 use app\components\specifications\UserCanEdit;
 use app\models\Author;
 use app\models\Book;
@@ -18,6 +19,7 @@ $this->params['breadcrumbs'][] = ['label' => 'Авторы', 'url' => ['index']]
 $this->params['breadcrumbs'][] = $this->title;
 
 $canEdit = (new UserCanEdit())->isSatisfiedByCurrentUser();
+$canSubscribe = (new GuestCanSubscribe())->isSatisfiedByCurrentUser();
 
 $books = new ActiveDataProvider([
     'query' => $model->getBooks()->orderBy(['year' => SORT_DESC]),
@@ -26,6 +28,18 @@ $books = new ActiveDataProvider([
 ?>
 <div class="author-view">
     <h1><?= Html::encode($this->title) ?></h1>
+
+    <?php if ($canSubscribe): ?>
+        <p>
+            <?= Html::button('Подписаться', [
+                'class' => 'btn btn-outline-primary',
+                'data' => [
+                    'subscription-author-id' => $model->id,
+                    'subscription-author-name' => $model->fullName,
+                ],
+            ]) ?>
+        </p>
+    <?php endif ?>
 
     <?php if ($canEdit): ?>
         <p>
@@ -65,4 +79,8 @@ $books = new ActiveDataProvider([
             ['/book/view', 'id' => $book->id],
         ) . ' (' . $book->year . ')',
     ]) ?>
+
+    <?php if ($canSubscribe): ?>
+        <?= $this->render('//subscription/_modal') ?>
+    <?php endif ?>
 </div>

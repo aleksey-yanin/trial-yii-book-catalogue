@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace app\assets;
 
 use yii\bootstrap5\BootstrapAsset;
+use yii\bootstrap5\BootstrapPluginAsset;
 use yii\web\AssetBundle;
 use yii\web\View;
 use yii\web\YiiAsset;
@@ -30,6 +31,8 @@ class AppAsset extends AssetBundle
     ];
     public $js = [
         'js/color-mode.js',
+        // В конец страницы: скрипту нужны и разметка модала, и bootstrap.bundle.
+        ['js/subscription.js', 'position' => View::POS_END],
     ];
     public $jsOptions = [
         'position' => View::POS_HEAD,
@@ -37,5 +40,7 @@ class AppAsset extends AssetBundle
     public $depends = [
         YiiAsset::class,
         BootstrapAsset::class,
+        // Модал и toast — это JS Bootstrap, а BootstrapAsset подключает только стили.
+        BootstrapPluginAsset::class,
     ];
 }
