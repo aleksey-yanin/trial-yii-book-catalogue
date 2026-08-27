@@ -56,6 +56,12 @@ return [
             'useFileTransport' => true,
             'viewPath' => '@app/mail',
         ],
+        // Счётчик RateLimitFilter живёт в кэше, и в тестах он должен переживать
+        // пересоздание приложения между запросами — ArrayCache для этого не годится.
+        'cache' => [
+            'class' => \yii\caching\FileCache::class,
+            'cachePath' => '@runtime/test-cache',
+        ],
         'assetManager' => [
             'basePath' => __DIR__ . '/../web/assets',
         ],

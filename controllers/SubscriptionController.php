@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\controllers;
 
+use app\components\filters\RateLimitFilter;
 use app\components\specifications\GuestCanSubscribe;
 use app\services\SubscriptionResult;
 use app\services\SubscriptionService;
@@ -21,6 +22,11 @@ use yii\web\Response;
  */
 final class SubscriptionController extends Controller
 {
+    /**
+     * Сколько подписок разрешено оформить с одного адреса за час.
+     */
+    private const SUBSCRIPTIONS_PER_HOUR = 10;
+
     public function __construct(
         $id,
         $module,
@@ -59,6 +65,16 @@ final class SubscriptionController extends Controller
             'contentNegotiator' => [
                 'class' => ContentNegotiator::class,
                 'formats' => ['application/json' => Response::FORMAT_JSON],
+            ],
+            // Подписка доступна любому гостю, поэтому единственное, что мешает набить
+            // таблицу и разослать SMS на чужие номера за счёт владельца ключа, — этот лимит.
+            // Стоит последним: формат ответа к этому моменту уже согласован, и отказ уходит
+            // тем же JSON, что и обычный ответ действия.
+            'rateLimit' => [
+                'class' => RateLimitFilter::class,
+                'limit' => self::SUBSCRIPTIONS_PER_HOUR,
+                'window' => 3600,
+                'message' => 'Слишком много попыток подписки. Попробуйте через час.',
             ],
         ];
     }

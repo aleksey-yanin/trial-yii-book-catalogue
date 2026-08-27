@@ -65,11 +65,20 @@ document.addEventListener('DOMContentLoaded', function () {
             },
         })
             .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Сервер ответил ошибкой ' + response.status);
+                if (response.ok) {
+                    return response.json();
                 }
 
-                return response.json();
+                // Отказ фильтра (например, лимит запросов) приходит тем же JSON:
+                // показываем его текст, а не голый код ответа.
+                return response.json().then(
+                    function (body) {
+                        throw new Error(body.message || 'Сервер ответил ошибкой ' + response.status);
+                    },
+                    function () {
+                        throw new Error('Сервер ответил ошибкой ' + response.status);
+                    },
+                );
             })
             .then(function (result) {
                 if (result.success) {

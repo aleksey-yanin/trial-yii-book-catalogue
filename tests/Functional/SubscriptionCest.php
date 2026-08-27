@@ -10,10 +10,25 @@ use app\models\Subscription;
 use app\models\User;
 use app\tests\Support\FunctionalTester;
 use yii\helpers\Url;
+use Yii;
 
 final class SubscriptionCest
 {
     private const PHONE = '+7 (999) 123-45-67';
+
+    /**
+     * Столько же, сколько SubscriptionController::SUBSCRIPTIONS_PER_HOUR.
+     */
+    private const LIMIT = 10;
+
+    /**
+     * Счётчик лимита живёт в кэше, а TransactionForcer откатывает только базу:
+     * без сброса он протёк бы из теста в тест.
+     */
+    public function _before(FunctionalTester $I): void
+    {
+        Yii::$app->cache->flush();
+    }
 
     public function guestSeesSubscribeButtonOnAuthorPage(FunctionalTester $I): void
     {
@@ -124,6 +139,40 @@ final class SubscriptionCest
         $I->amOnPage(Url::to(['/subscription/create']));
 
         $I->seeResponseCodeIs(405);
+    }
+
+    /**
+     * Подписка открыта гостю, поэтому лимит запросов — единственное, что мешает набить
+     * таблицу и разослать SMS на чужие номера за счёт владельца ключа smspilot.
+     */
+    public function tooManyRequestsAreRejected(FunctionalTester $I): void
+    {
+        $author = $this->createAuthor();
+
+        for ($number = 0; $number < self::LIMIT; $number++) {
+            $this->post($I, $author->id, sprintf('7999123%04d', $number));
+            $I->seeResponseCodeIs(200);
+        }
+
+        $this->post($I, $author->id, '79991239999');
+
+        $I->seeResponseCodeIs(429);
+        $I->assertSame(self::LIMIT, (int) Subscription::find()->count());
+    }
+
+    /**
+     * Отказ приходит тем же JSON, что и обычный ответ: модальное окно показывает текст,
+     * а не голый код ответа.
+     */
+    public function rateLimitAnswersWithJsonMessage(FunctionalTester $I): void
+    {
+        $author = $this->createAuthor();
+
+        for ($number = 0; $number <= self::LIMIT; $number++) {
+            $this->post($I, $author->id, sprintf('7999123%04d', $number));
+        }
+
+        $I->assertStringContainsString('Слишком много попыток подписки', $I->grabPageSource());
     }
 
     private function post(FunctionalTester $I, int $authorId, string $phone): void
