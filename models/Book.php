@@ -74,6 +74,17 @@ class Book extends ActiveRecord
         ];
     }
 
+    /**
+     * Запись книги и синхронизация связей с авторами — одна операция.
+     *
+     * Связи правит afterSave(), то есть отдельными запросами уже после INSERT/UPDATE.
+     * Без транзакции сбой между ними оставил бы книгу в каталоге без авторов.
+     */
+    public function transactions(): array
+    {
+        return [self::SCENARIO_DEFAULT => self::OP_ALL];
+    }
+
     public function rules(): array
     {
         return [
@@ -177,21 +188,46 @@ class Book extends ActiveRecord
 
     /**
      * Приводит связи книги с авторами в соответствие выбранным.
+     *
+     * Сравнение вместо «снести и переставить»: правка книги, не менявшая состав авторов,
+     * не должна порождать ни одной записи, а добавление N авторов — N отдельных INSERT.
      */
     private function syncAuthors(): void
     {
-        // Читаем до unlinkAll: если атрибут ещё не загружали, ленивый геттер после
-        // удаления связей вернул бы пустой список и авторы книги потерялись бы.
-        $ids = $this->authorIds;
+        // Выбранный состав читается первым: ленивый геттер, вызванный после правки
+        // book_author, вернул бы уже записанное состояние вместо пришедшего из формы.
+        $selected = $this->authorIds;
 
-        $this->unlinkAll('authors', true);
+        // Несуществующие идентификаторы отсеиваются здесь, а не внешним ключом:
+        // подделанное поле формы не должно ронять сохранение книги.
+        $valid = array_map('intval', Author::find()->select('id')->where(['id' => $selected])->column());
+        $linked = array_map('intval', $this->getAuthors()->select('id')->column());
 
-        if ($ids === []) {
+        $added = array_values(array_diff($valid, $linked));
+        $removed = array_values(array_diff($linked, $valid));
+
+        if ($added === [] && $removed === []) {
             return;
         }
 
-        foreach (Author::findAll(['id' => $ids]) as $author) {
-            $this->link('authors', $author);
+        $db = static::getDb();
+
+        if ($removed !== []) {
+            $db->createCommand()
+                ->delete('{{%book_author}}', ['book_id' => $this->id, 'author_id' => $removed])
+                ->execute();
         }
+
+        if ($added !== []) {
+            $db->createCommand()
+                ->batchInsert('{{%book_author}}', ['book_id', 'author_id'], array_map(
+                    fn (int $authorId): array => [$this->id, $authorId],
+                    $added,
+                ))
+                ->execute();
+        }
+
+        // Кэш связи мог быть заполнен до сохранения; прежний unlinkAll() сбрасывал его сам.
+        unset($this->authors);
     }
 }

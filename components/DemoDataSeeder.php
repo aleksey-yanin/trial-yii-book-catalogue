@@ -60,10 +60,15 @@ class DemoDataSeeder
      */
     public function seed(): array
     {
-        $authors = $this->createAuthors();
-        $books = $this->createReportYearBooks($authors) + $this->createOtherYearsBooks($authors);
+        // Наполнение — одна операция: оборванный на середине сидер оставил бы каталог
+        // с частью авторов и книг, и отчёт показал бы не то распределение, ради которого
+        // он и написан.
+        return Book::getDb()->transaction(function (): array {
+            $authors = $this->createAuthors();
+            $books = $this->createReportYearBooks($authors) + $this->createOtherYearsBooks($authors);
 
-        return ['authors' => count($authors), 'books' => $books];
+            return ['authors' => count($authors), 'books' => $books];
+        });
     }
 
     /**
@@ -106,9 +111,11 @@ class DemoDataSeeder
 
     public function clear(): void
     {
-        // Связи в book_author уберёт внешний ключ с ON DELETE CASCADE.
-        Book::deleteAll();
-        Author::deleteAll();
+        Book::getDb()->transaction(static function (): void {
+            // Связи в book_author уберёт внешний ключ с ON DELETE CASCADE.
+            Book::deleteAll();
+            Author::deleteAll();
+        });
     }
 
     /**

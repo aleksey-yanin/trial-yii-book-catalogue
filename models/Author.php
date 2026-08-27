@@ -109,7 +109,12 @@ class Author extends ActiveRecord
     {
         $options = [];
 
-        foreach (self::find()->orderBy(['last_name' => SORT_ASC, 'first_name' => SORT_ASC])->all() as $author) {
+        $query = self::find()
+            // Списку нужны только идентификатор и то, из чего складывается ФИО.
+            ->select(['id', 'last_name', 'first_name', 'middle_name'])
+            ->orderBy(['last_name' => SORT_ASC, 'first_name' => SORT_ASC]);
+
+        foreach ($query->all() as $author) {
             $options[$author->id] = $author->fullName;
         }
 

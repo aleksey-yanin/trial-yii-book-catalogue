@@ -6,6 +6,7 @@ namespace app\tests\Unit\Models;
 
 use app\models\Author;
 use app\models\Book;
+use yii\log\Logger;
 
 final class BookTest extends \Codeception\Test\Unit
 {
@@ -180,6 +181,80 @@ final class BookTest extends \Codeception\Test\Unit
         verify($loaded->getAuthors()->count())->equals(1);
     }
 
+    /**
+     * Правка, не касающаяся авторов, не должна трогать таблицу связей: прежняя реализация
+     * на каждом сохранении сносила все строки и вставляла их заново.
+     */
+    public function testUnchangedAuthorsDoNotTouchLinkTable(): void
+    {
+        $author = $this->createAuthor('Лем', 'Станислав');
+        $book = $this->makeBook(['authorIds' => [$author->id]]);
+        $book->save();
+
+        $queries = $this->linkQueriesDuring(static function () use ($book): void {
+            $book->title = 'Другое название';
+            $book->save();
+        });
+
+        verify($queries)->equals([]);
+    }
+
+    /**
+     * Несколько авторов записываются одним запросом, а не по одному на автора.
+     */
+    public function testSeveralAuthorsAreLinkedInOneInsert(): void
+    {
+        $ids = [
+            $this->createAuthor('Стругацкий', 'Аркадий')->id,
+            $this->createAuthor('Стругацкий', 'Борис')->id,
+            $this->createAuthor('Лем', 'Станислав')->id,
+        ];
+        $book = $this->makeBook(['authorIds' => $ids]);
+
+        $queries = $this->linkQueriesDuring(static function () use ($book): void {
+            $book->save();
+        });
+
+        verify($queries)->arrayCount(1);
+        verify($book->getAuthors()->count())->equals(3);
+    }
+
+    /**
+     * Смена одного соавтора не должна переписывать связь со вторым.
+     */
+    public function testPartialAuthorChangeKeepsCommonAuthor(): void
+    {
+        $kept = $this->createAuthor('Стругацкий', 'Аркадий');
+        $dropped = $this->createAuthor('Стругацкий', 'Борис');
+        $added = $this->createAuthor('Лем', 'Станислав');
+
+        $book = $this->makeBook(['authorIds' => [$kept->id, $dropped->id]]);
+        $book->save();
+
+        $book->authorIds = [$kept->id, $added->id];
+        verify($book->save())->true();
+
+        $ids = array_map('intval', $book->getAuthors()->select('id')->column());
+        sort($ids);
+        $expected = [$kept->id, $added->id];
+        sort($expected);
+
+        verify($ids)->equals($expected);
+    }
+
+    /**
+     * Подделанное поле формы не должно ронять сохранение на внешнем ключе.
+     */
+    public function testIgnoresUnknownAuthorIds(): void
+    {
+        $author = $this->createAuthor('Лем', 'Станислав');
+        $book = $this->makeBook(['authorIds' => [$author->id, 999999]]);
+
+        verify($book->save())->true();
+        verify(array_map('intval', $book->getAuthors()->select('id')->column()))
+            ->equals([$author->id]);
+    }
+
     public function testDeletingBookRemovesLinks(): void
     {
         $author = $this->createAuthor('Лем', 'Станислав');
@@ -208,6 +283,48 @@ final class BookTest extends \Codeception\Test\Unit
 
         verify(Book::findOne($book->id))->notNull();
         verify(Book::findOne($book->id)->getAuthors()->count())->equals(0);
+    }
+
+    /**
+     * Запросы к таблице связей, выполненные за время действия.
+     *
+     * Codeception подменяет логгер Yii своим, который сообщения выбрасывает, поэтому
+     * на время действия ставится обычный yii\log\Logger и читается уже он. Профилирование
+     * запросов yii\db\Connection включает по умолчанию — этого достаточно.
+     *
+     * @return string[]
+     */
+    private function linkQueriesDuring(callable $action): array
+    {
+        $previous = \Yii::getLogger();
+        $logger = new Logger();
+        $logger->flushInterval = PHP_INT_MAX;
+        \Yii::setLogger($logger);
+
+        try {
+            $action();
+        } finally {
+            \Yii::setLogger($previous);
+        }
+
+        $queries = [];
+
+        foreach ($logger->messages as $message) {
+            $text = $message[0];
+
+            // Один запрос даёт три записи (info, начало и конец профилирования),
+            // поэтому берём только начало профиля.
+            if (
+                $message[1] === Logger::LEVEL_PROFILE_BEGIN
+                && is_string($text)
+                && str_contains($text, 'book_author')
+                && preg_match('/^\s*(INSERT|DELETE)\b/i', $text) === 1
+            ) {
+                $queries[] = $text;
+            }
+        }
+
+        return $queries;
     }
 
     /**
