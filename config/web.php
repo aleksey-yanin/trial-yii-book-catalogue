@@ -10,6 +10,17 @@ $config = [
     'bootstrap' => ['log'],
     'container' => [
         'singletons' => [
+            // Хранилище и уведомитель настраиваются ЗДЕСЬ, а одноимённые компоненты ниже —
+            // лишь псевдонимы для вьюх. Раньше настройка жила в components, а контейнер о ней
+            // не знал, поэтому автовайринг конструктора собирал второй экземпляр с дефолтным
+            // basePath: код писал обложки мимо каталога, из которого их читают вьюхи (в тестах
+            // компонент переведён на @runtime, и расхождение было настоящим).
+            //
+            // Обратная связка — определить синглтон замыканием `Yii::$app->get('coverStorage')` —
+            // даёт бесконечную рекурсию: ServiceLocator строит компонент через createObject(),
+            // тот уходит в контейнер и попадает обратно в это же замыкание.
+            \app\components\CoverStorage::class => [],
+            \app\components\BookNotifier::class => [],
             \yii\mail\MailerInterface::class => [
                 'class' => \yii\symfonymailer\Mailer::class,
                 // send all mails to a file by default.
@@ -25,9 +36,12 @@ $config = [
     // Интерфейс русский, поэтому встроенные сообщения валидации тоже должны быть русскими.
     'language' => 'ru-RU',
     'components' => [
-        'coverStorage' => [
-            'class' => \app\components\CoverStorage::class,
-        ],
+        // Псевдонимы к определениям контейнера: настройка не дублируется, а вьюхи
+        // и старый код продолжают обращаться через Yii::$app.
+        'coverStorage' => static fn (): \app\components\CoverStorage
+            => Yii::$container->get(\app\components\CoverStorage::class),
+        'bookNotifier' => static fn (): \app\components\BookNotifier
+            => Yii::$container->get(\app\components\BookNotifier::class),
         'smsQueue' => [
             'class' => \yii\queue\db\Queue::class,
             'db' => 'db',
@@ -39,9 +53,6 @@ $config = [
         'smsSender' => [
             'class' => \app\components\sms\SmsPilotClient::class,
             'apiKey' => getenv('SMSPILOT_API_KEY') ?: 'XXXXXXXXXXXXYYYYYYYYYYYYZZZZZZZZZZZZ',
-        ],
-        'bookNotifier' => [
-            'class' => \app\components\BookNotifier::class,
         ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation

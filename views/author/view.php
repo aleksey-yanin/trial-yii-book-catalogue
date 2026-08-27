@@ -13,6 +13,7 @@ use yii\data\ActiveDataProvider;
 
 /** @var yii\web\View $this */
 /** @var Author $model */
+/** @var ActiveDataProvider $books */
 
 $this->title = $model->fullName;
 $this->params['breadcrumbs'][] = ['label' => 'Авторы', 'url' => ['index']];
@@ -20,11 +21,6 @@ $this->params['breadcrumbs'][] = $this->title;
 
 $canEdit = (new UserCanEdit())->isSatisfiedByCurrentUser();
 $canSubscribe = (new GuestCanSubscribe())->isSatisfiedByCurrentUser();
-
-$books = new ActiveDataProvider([
-    'query' => $model->getBooks()->orderBy(['year' => SORT_DESC]),
-    'pagination' => ['pageSize' => 20],
-]);
 ?>
 <div class="author-view">
     <h1><?= Html::encode($this->title) ?></h1>

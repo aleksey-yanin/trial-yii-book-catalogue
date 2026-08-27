@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace app\models;
 
 use yii\behaviors\TimestampBehavior;
+use yii\data\ActiveDataProvider;
 use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
 
@@ -80,5 +81,38 @@ class Author extends ActiveRecord
     {
         return $this->hasMany(Book::class, ['id' => 'book_id'])
             ->viaTable('{{%book_author}}', ['author_id' => 'id']);
+    }
+
+    /**
+     * Книги автора для его карточки.
+     *
+     * Провайдер собирается здесь, а не во вьюхе: сортировка относится к связи и должна
+     * лежать рядом с ней, а представление не обязано знать, как устроена выборка.
+     */
+    public function booksProvider(int $pageSize = 20): ActiveDataProvider
+    {
+        return new ActiveDataProvider([
+            'query' => $this->getBooks()->orderBy(['year' => SORT_DESC]),
+            'pagination' => ['pageSize' => $pageSize],
+        ]);
+    }
+
+    /**
+     * Авторы для выпадающих списков: идентификатор → ФИО.
+     *
+     * Собирается циклом, а не ArrayHelper::map(): хелпер объявлен как бестиповый array,
+     * и на PHPStan обещание array<int, string> с ним не сходится.
+     *
+     * @return array<int, string>
+     */
+    public static function optionList(): array
+    {
+        $options = [];
+
+        foreach (self::find()->orderBy(['last_name' => SORT_ASC, 'first_name' => SORT_ASC])->all() as $author) {
+            $options[$author->id] = $author->fullName;
+        }
+
+        return $options;
     }
 }

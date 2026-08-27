@@ -45,7 +45,7 @@ class Book extends ActiveRecord
      * Свойство намеренно без строгого типа: рядом с полем файла Yii рендерит скрытый input
      * с тем же именем, поэтому форма без выбранного файла присылает пустую строку, и
      * объявление `?UploadedFile` роняло бы load() с TypeError. Реальный объект подставляет
-     * контроллер через UploadedFile::getInstance() до валидации.
+     * контроллер через UploadedFile::getInstance(), а сохраняет его BookService.
      *
      * @var UploadedFile|string|null
      */
@@ -75,7 +75,10 @@ class Book extends ActiveRecord
             [['title', 'isbn'], 'trim'],
             ['title', 'string', 'max' => 255],
             ['description', 'string'],
-            ['cover_path', 'string', 'max' => 255],
+            // Восклицательный знак снимает атрибут с массового присваивания, оставляя
+            // валидацию: имя файла ставит только CoverStorage, и подделанное поле формы
+            // не должно ни подменять запись, ни приводить к удалению чужого файла.
+            ['!cover_path', 'string', 'max' => 255],
 
             ['year', 'integer', 'min' => self::MIN_YEAR, 'max' => self::maxYear()],
 

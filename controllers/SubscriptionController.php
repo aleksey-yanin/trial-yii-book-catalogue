@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace app\controllers;
 
 use app\components\specifications\GuestCanSubscribe;
-use app\models\Subscription;
+use app\services\SubscriptionResult;
+use app\services\SubscriptionService;
 use yii\filters\AccessControl;
+use yii\filters\ContentNegotiator;
 use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\Response;
@@ -17,8 +19,17 @@ use yii\web\Response;
  * Отвечает JSON: форма живёт в модальном окне и отправляется через fetch,
  * перезагрузка страницы не нужна.
  */
-class SubscriptionController extends Controller
+final class SubscriptionController extends Controller
 {
+    public function __construct(
+        $id,
+        $module,
+        private readonly SubscriptionService $subscriptions,
+        $config = [],
+    ) {
+        parent::__construct($id, $module, $config);
+    }
+
     public function behaviors(): array
     {
         return [
@@ -41,28 +52,19 @@ class SubscriptionController extends Controller
                     'create' => ['post'],
                 ],
             ],
+            // Формат объявляется фильтром, а не присваиванием внутри экшена: экшен возвращает
+            // результат операции и о транспорте не знает. Фильтр идёт после verbs намеренно —
+            // они срабатывают в порядке объявления, и запрет GET (405) обязан отработать
+            // раньше согласования формата ответа.
+            'contentNegotiator' => [
+                'class' => ContentNegotiator::class,
+                'formats' => ['application/json' => Response::FORMAT_JSON],
+            ],
         ];
     }
 
-    /**
-     * @return array{success: bool, message: string}
-     */
-    public function actionCreate(): array
+    public function actionCreate(): SubscriptionResult
     {
-        $this->response->format = Response::FORMAT_JSON;
-
-        $model = new Subscription();
-        $model->load($this->request->post());
-
-        if ($model->save()) {
-            return ['success' => true, 'message' => 'Подписка оформлена!'];
-        }
-
-        return [
-            'success' => false,
-            // Первая ошибка понятнее пользователю, чем перечисление всех сразу.
-            'message' => $model->getFirstErrors()[array_key_first($model->getFirstErrors())]
-                ?? 'Не удалось оформить подписку.',
-        ];
+        return $this->subscriptions->subscribe($this->request->post());
     }
 }

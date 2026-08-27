@@ -64,14 +64,18 @@ class LoginForm extends Model
     }
 
     /**
-     * Logs in a user using the provided username and password.
-     * @return bool whether the user is logged in successfully
+     * Вход по указанным логину и паролю.
+     *
+     * Пароль обнуляется здесь, а не в контроллере: форма сама решает, что показывать
+     * после неудачи, и повторно отрисованное поле не должно возвращать введённое.
      */
     public function login(): bool
     {
         if ($this->validate()) {
             return Yii::$app->user->login($this->getUser(), $this->rememberMe ? 3600 * 24 * 30 : 0);
         }
+
+        $this->password = '';
 
         return false;
     }

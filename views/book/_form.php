@@ -2,20 +2,13 @@
 
 declare(strict_types=1);
 
-use app\models\Author;
 use app\models\Book;
-use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
 /** @var Book $model */
-
-$authors = ArrayHelper::map(
-    Author::find()->orderBy(['last_name' => SORT_ASC, 'first_name' => SORT_ASC])->all(),
-    'id',
-    fn (Author $author): string => $author->fullName,
-);
+/** @var array<int, string> $authors */
 
 $coverUrl = Yii::$app->coverStorage->getUrl($model->cover_path);
 ?>

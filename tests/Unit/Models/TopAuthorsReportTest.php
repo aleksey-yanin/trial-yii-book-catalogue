@@ -164,6 +164,19 @@ final class TopAuthorsReportTest extends \Codeception\Test\Unit
     }
 
     /**
+     * Выпадающий список получает пары значение → подпись; подписи строковые, иначе
+     * dropDownList отрисует их иначе, чем ожидает представление.
+     */
+    public function testYearOptionsPairValueWithLabel(): void
+    {
+        $lem = $this->createAuthor('Лем');
+        $this->createBooks(2019, $lem, 1);
+        $this->createBooks(2021, $lem, 1);
+
+        verify(TopAuthorsReport::yearOptions())->equals([2021 => '2021', 2019 => '2019']);
+    }
+
+    /**
      * @return array<int, array{authorId: int, fullName: string, booksCount: int}>
      */
     private function report(int $year): array

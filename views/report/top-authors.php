@@ -3,22 +3,16 @@
 declare(strict_types=1);
 
 use app\models\TopAuthorsReport;
-use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
 /** @var TopAuthorsReport $model */
 /** @var array<int, array{authorId: int, fullName: string, booksCount: int}> $rows */
+/** @var array<int, string> $years */
 
 $this->title = 'ТОП-' . TopAuthorsReport::LIMIT . ' авторов за год';
 $this->params['breadcrumbs'][] = $this->title;
-
-$years = ArrayHelper::map(
-    TopAuthorsReport::availableYears(),
-    static fn (int $year): int => $year,
-    static fn (int $year): string => (string) $year,
-);
 ?>
 <div class="report-top-authors">
     <h1><?= Html::encode($this->title) ?></h1>

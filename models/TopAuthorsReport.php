@@ -131,6 +131,22 @@ class TopAuthorsReport extends Model
     }
 
     /**
+     * Годы для выпадающего списка: значение → подпись.
+     *
+     * @return array<int, string>
+     */
+    public static function yearOptions(): array
+    {
+        $options = [];
+
+        foreach (self::availableYears() as $year) {
+            $options[$year] = (string) $year;
+        }
+
+        return $options;
+    }
+
+    /**
      * По умолчанию показывается самый свежий год каталога: отчёт за год, в котором
      * заведомо нет книг, бесполезен.
      */

@@ -56,6 +56,23 @@ final class LoginFormTest extends \Codeception\Test\Unit
         verify($this->_model->errors)->arrayHasNotKey('password');
     }
 
+    /**
+     * После неудачи форма отрисовывается заново, и поле пароля не должно возвращать
+     * введённое значение.
+     */
+    public function testFailedLoginClearsPassword()
+    {
+        $this->createUser();
+
+        $this->_model = new LoginForm([
+            'username' => 'tester',
+            'password' => 'неверный пароль',
+        ]);
+        $this->_model->login();
+
+        verify($this->_model->password)->equals('');
+    }
+
     private function createUser(): User
     {
         $user = new User(['username' => 'tester']);

@@ -9,24 +9,18 @@ use app\models\BookSearch;
 use yii\data\ActiveDataProvider;
 use yii\grid\ActionColumn;
 use yii\grid\GridView;
-use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
 /** @var BookSearch $searchModel */
 /** @var ActiveDataProvider $dataProvider */
+/** @var array<int, string> $authors */
 
 $this->title = 'Книги';
 $this->params['breadcrumbs'][] = $this->title;
 
 $canEdit = (new UserCanEdit())->isSatisfiedByCurrentUser();
-
-$authors = ArrayHelper::map(
-    Author::find()->orderBy(['last_name' => SORT_ASC, 'first_name' => SORT_ASC])->all(),
-    'id',
-    fn (Author $author): string => $author->fullName,
-);
 ?>
 <div class="book-index">
     <h1><?= Html::encode($this->title) ?></h1>

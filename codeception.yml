@@ -27,5 +27,6 @@ coverage:
     - /controllers/*
     - /mail/*
     - /models/*
+    - /services/*
     - /views/*
     - /widgets/*

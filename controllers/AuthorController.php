@@ -4,49 +4,19 @@ declare(strict_types=1);
 
 namespace app\controllers;
 
-use app\components\specifications\UserCanEdit;
+use app\components\controllers\CatalogueController;
 use app\models\Author;
 use app\models\AuthorSearch;
-use yii\filters\AccessControl;
-use yii\filters\VerbFilter;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
 /**
  * Авторы каталога.
  *
- * Права доступа здесь не разграничиваются — это делается на шаге 5.
+ * Своего сервиса у автора нет и не нужно: ни файлов, ни очереди, ни порядка операций —
+ * load() && save() и есть вся операция целиком.
  */
-class AuthorController extends Controller
+final class AuthorController extends CatalogueController
 {
-    public function behaviors(): array
-    {
-        return [
-            'access' => [
-                'class' => AccessControl::class,
-                'rules' => [
-                    [
-                        'actions' => ['index', 'view'],
-                        'allow' => true,
-                    ],
-                    [
-                        'actions' => ['create', 'update', 'delete'],
-                        'allow' => true,
-                        'matchCallback' => static fn (): bool => (new UserCanEdit())
-                            ->isSatisfiedByCurrentUser(),
-                    ],
-                ],
-            ],
-            'verbs' => [
-                'class' => VerbFilter::class,
-                'actions' => [
-                    'delete' => ['post'],
-                ],
-            ],
-        ];
-    }
-
     public function actionIndex(): string
     {
         $searchModel = new AuthorSearch();
@@ -60,8 +30,11 @@ class AuthorController extends Controller
 
     public function actionView(int $id): string
     {
+        $model = $this->findModel($id);
+
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
+            'books' => $model->booksProvider(),
         ]);
     }
 
@@ -97,12 +70,6 @@ class AuthorController extends Controller
 
     private function findModel(int $id): Author
     {
-        $model = Author::findOne($id);
-
-        if ($model === null) {
-            throw new NotFoundHttpException('Автор не найден.');
-        }
-
-        return $model;
+        return $this->findOrFail(Author::class, $id, 'Автор не найден.');
     }
 }

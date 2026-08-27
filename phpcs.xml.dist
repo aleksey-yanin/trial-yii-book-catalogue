@@ -19,6 +19,7 @@
     <file>mail</file>
     <file>migrations</file>
     <file>models</file>
+    <file>services</file>
     <file>tests</file>
     <file>widgets</file>
 </ruleset>

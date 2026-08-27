@@ -4,63 +4,29 @@ declare(strict_types=1);
 
 namespace app\controllers;
 
-use Yii;
-use app\components\BookNotifier;
-use app\components\CoverStorage;
-use app\components\specifications\UserCanEdit;
+use app\components\controllers\CatalogueController;
+use app\models\Author;
 use app\models\Book;
 use app\models\BookSearch;
-use yii\filters\AccessControl;
-use yii\filters\VerbFilter;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
+use app\services\BookService;
 use yii\web\Response;
 use yii\web\UploadedFile;
 
 /**
  * Каталог книг: просмотр, добавление, редактирование и удаление.
  *
- * Права доступа здесь не разграничиваются — это делается на шаге 5.
+ * Порядок сохранения, работа с файлом обложки и постановка уведомлений живут
+ * в BookService — контроллер только связывает запрос с моделью и выбирает, куда идти дальше.
  */
-class BookController extends Controller
+final class BookController extends CatalogueController
 {
     public function __construct(
         $id,
         $module,
-        private readonly CoverStorage $coverStorage,
+        private readonly BookService $books,
         $config = [],
     ) {
         parent::__construct($id, $module, $config);
-    }
-
-    public function behaviors(): array
-    {
-        return [
-            'access' => [
-                'class' => AccessControl::class,
-                'rules' => [
-                    [
-                        'actions' => ['index', 'view'],
-                        'allow' => true,
-                    ],
-                    [
-                        'actions' => ['create', 'update', 'delete'],
-                        'allow' => true,
-                        // Та же спецификация решает и показ кнопок в представлениях,
-                        // поэтому запрет действия не может разойтись с интерфейсом.
-                        'matchCallback' => static fn (): bool => (new UserCanEdit())
-                            ->isSatisfiedByCurrentUser(),
-                    ],
-                ],
-            ],
-            'verbs' => [
-                'class' => VerbFilter::class,
-                'actions' => [
-                    // Удаление по GET позволило бы стереть книгу простой ссылкой.
-                    'delete' => ['post'],
-                ],
-            ],
-        ];
     }
 
     public function actionIndex(): string
@@ -71,6 +37,7 @@ class BookController extends Controller
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'authors' => Author::optionList(),
         ]);
     }
 
@@ -85,84 +52,54 @@ class BookController extends Controller
     {
         $model = new Book();
 
-        if ($model->load($this->request->post())) {
-            $model->coverFile = UploadedFile::getInstance($model, 'coverFile');
-
-            if ($model->validate()) {
-                if ($model->coverFile !== null) {
-                    $model->cover_path = $this->coverStorage->save($model->coverFile);
-                }
-
-                // Валидация уже прошла — второй раз её гонять незачем.
-                if ($model->save(false)) {
-                    $this->notifySubscribers($model);
-
-                    return $this->redirect(['view', 'id' => $model->id]);
-                }
-            }
+        if ($this->loadFromRequest($model) && $this->books->create($model)) {
+            return $this->redirect(['view', 'id' => $model->id]);
         }
 
-        return $this->render('create', ['model' => $model]);
+        return $this->render('create', [
+            'model' => $model,
+            'authors' => Author::optionList(),
+        ]);
     }
 
     public function actionUpdate(int $id): Response|string
     {
         $model = $this->findModel($id);
-        $previousCover = $model->cover_path;
 
-        if ($model->load($this->request->post())) {
-            $model->coverFile = UploadedFile::getInstance($model, 'coverFile');
-
-            if ($model->validate()) {
-                if ($model->coverFile !== null) {
-                    $model->cover_path = $this->coverStorage->save($model->coverFile);
-                }
-
-                if ($model->save(false)) {
-                    // Старый файл убираем только после успешного сохранения записи.
-                    if ($model->coverFile !== null && $previousCover !== $model->cover_path) {
-                        $this->coverStorage->delete($previousCover);
-                    }
-
-                    return $this->redirect(['view', 'id' => $model->id]);
-                }
-            }
+        if ($this->loadFromRequest($model) && $this->books->update($model)) {
+            return $this->redirect(['view', 'id' => $model->id]);
         }
 
-        return $this->render('update', ['model' => $model]);
+        return $this->render('update', [
+            'model' => $model,
+            'authors' => Author::optionList(),
+        ]);
     }
 
     public function actionDelete(int $id): Response
     {
-        $model = $this->findModel($id);
-        $cover = $model->cover_path;
-
-        $model->delete();
-        // Связи в book_author уберёт внешний ключ с ON DELETE CASCADE.
-        $this->coverStorage->delete($cover);
+        $this->books->delete($this->findModel($id));
 
         return $this->redirect(['index']);
     }
 
     /**
-     * Уведомления ставятся в очередь здесь, а не в Book::afterSave(): сидер демо-данных
-     * создаёт полсотни книг и забил бы очередь заданиями, которые никому не нужны.
+     * Переносит данные запроса в модель. Файл достаётся отдельно: в $_POST его нет,
+     * браузер кладёт загрузку в $_FILES.
      */
-    private function notifySubscribers(Book $book): void
+    private function loadFromRequest(Book $model): bool
     {
-        /** @var BookNotifier $notifier */
-        $notifier = Yii::$app->get('bookNotifier');
-        $notifier->notifyAboutNewBook($book);
+        if (!$model->load($this->request->post())) {
+            return false;
+        }
+
+        $model->coverFile = UploadedFile::getInstance($model, 'coverFile');
+
+        return true;
     }
 
     private function findModel(int $id): Book
     {
-        $model = Book::findOne($id);
-
-        if ($model === null) {
-            throw new NotFoundHttpException('Книга не найдена.');
-        }
-
-        return $model;
+        return $this->findOrFail(Book::class, $id, 'Книга не найдена.');
     }
 }

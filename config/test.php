@@ -14,6 +14,19 @@ return [
         \app\tests\Support\MailerBootstrap::class,
         'smsQueue',
     ],
+    // Настройка классов живёт в контейнере, компоненты ниже — псевдонимы к ней (пояснение
+    // в config/web.php). Здесь это особенно важно: хранилище переведено на @runtime, и пока
+    // определения не было, код получал экземпляр, пишущий в web/uploads, а вьюхи читали
+    // из runtime.
+    'container' => [
+        'singletons' => [
+            \app\components\CoverStorage::class => [
+                // Тесты не должны мусорить в web/uploads — файлы уходят в runtime.
+                'basePath' => '@runtime/test-uploads/covers',
+            ],
+            \app\components\BookNotifier::class => [],
+        ],
+    ],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
@@ -21,11 +34,10 @@ return [
     'language' => 'ru-RU',
     'components' => [
         'db' => $db,
-        // Тесты не должны мусорить в web/uploads — файлы уходят в runtime.
-        'coverStorage' => [
-            'class' => \app\components\CoverStorage::class,
-            'basePath' => '@runtime/test-uploads/covers',
-        ],
+        'coverStorage' => static fn (): \app\components\CoverStorage
+            => Yii::$container->get(\app\components\CoverStorage::class),
+        'bookNotifier' => static fn (): \app\components\BookNotifier
+            => Yii::$container->get(\app\components\BookNotifier::class),
         'smsQueue' => [
             'class' => \yii\queue\db\Queue::class,
             'db' => 'db',
@@ -37,9 +49,6 @@ return [
         'smsSender' => [
             'class' => \app\components\sms\SmsPilotClient::class,
             'apiKey' => getenv('SMSPILOT_API_KEY') ?: 'XXXXXXXXXXXXYYYYYYYYYYYYZZZZZZZZZZZZ',
-        ],
-        'bookNotifier' => [
-            'class' => \app\components\BookNotifier::class,
         ],
         'mailer' => [
             'class' => \yii\symfonymailer\Mailer::class,

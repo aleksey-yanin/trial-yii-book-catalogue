@@ -67,6 +67,36 @@ class DemoDataSeeder
     }
 
     /**
+     * Наполняет каталог, только если он пуст; null означает, что данные уже есть
+     * и трогать их не стали.
+     *
+     * Решение «не затирать чужие книги» принимает сидер, а не команда: вызывающему
+     * остаётся выбрать режим и сообщить о результате.
+     *
+     * @return array{authors: int, books: int}|null
+     */
+    public function seedIfEmpty(): ?array
+    {
+        if (!$this->catalogueIsEmpty()) {
+            return null;
+        }
+
+        return $this->seed();
+    }
+
+    /**
+     * Пересоздаёт демо-данные с нуля.
+     *
+     * @return array{authors: int, books: int}
+     */
+    public function refresh(): array
+    {
+        $this->clear();
+
+        return $this->seed();
+    }
+
+    /**
      * Есть ли в каталоге данные: сидер не должен затирать чужие книги.
      */
     public function catalogueIsEmpty(): bool

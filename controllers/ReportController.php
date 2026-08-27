@@ -23,6 +23,7 @@ class ReportController extends Controller
         return $this->render('top-authors', [
             'model' => $model,
             'rows' => $model->rows(),
+            'years' => TopAuthorsReport::yearOptions(),
         ]);
     }
 }

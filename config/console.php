@@ -11,6 +11,14 @@ $config = [
     // `sms-queue` — имя берётся от компонента.
     'bootstrap' => ['log', 'smsQueue'],
     'controllerNamespace' => 'app\commands',
+    // Настройка классов живёт в контейнере, компоненты ниже — псевдонимы к ней.
+    // Подробное пояснение и описание грабли с рекурсией — в config/web.php.
+    'container' => [
+        'singletons' => [
+            \app\components\CoverStorage::class => [],
+            \app\components\BookNotifier::class => [],
+        ],
+    ],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
@@ -22,9 +30,10 @@ $config = [
     ],
     'language' => 'ru-RU',
     'components' => [
-        'coverStorage' => [
-            'class' => \app\components\CoverStorage::class,
-        ],
+        'coverStorage' => static fn (): \app\components\CoverStorage
+            => Yii::$container->get(\app\components\CoverStorage::class),
+        'bookNotifier' => static fn (): \app\components\BookNotifier
+            => Yii::$container->get(\app\components\BookNotifier::class),
         'smsQueue' => [
             'class' => \yii\queue\db\Queue::class,
             'db' => 'db',
@@ -36,9 +45,6 @@ $config = [
         'smsSender' => [
             'class' => \app\components\sms\SmsPilotClient::class,
             'apiKey' => getenv('SMSPILOT_API_KEY') ?: 'XXXXXXXXXXXXYYYYYYYYYYYYZZZZZZZZZZZZ',
-        ],
-        'bookNotifier' => [
-            'class' => \app\components\BookNotifier::class,
         ],
         'cache' => [
             'class' => \yii\caching\FileCache::class,

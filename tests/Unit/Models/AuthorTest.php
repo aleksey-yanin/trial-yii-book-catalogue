@@ -83,11 +83,49 @@ final class AuthorTest extends \Codeception\Test\Unit
         verify($author->updated_at)->greaterThan(0);
     }
 
+    /**
+     * Список для выпадающих полей: идентификатор → ФИО, по фамилии.
+     */
+    public function testOptionListIsSortedByLastName(): void
+    {
+        $second = $this->createAuthor();
+        $first = new Author(['last_name' => 'Лем', 'first_name' => 'Станислав']);
+        $first->save();
+
+        $options = Author::optionList();
+
+        verify(array_key_first($options))->equals($first->id);
+        verify($options[$second->id])->equals('Стругацкий Аркадий');
+    }
+
+    public function testBooksProviderSortsByYearDescending(): void
+    {
+        $author = $this->createAuthor();
+        $this->createBook($author->id, 'Ранняя', 1960, '9785171183660');
+        $this->createBook($author->id, 'Поздняя', 1985, '9785389089341');
+
+        $models = $author->booksProvider()->getModels();
+
+        verify($models)->arrayCount(2);
+        verify($models[0]->title)->equals('Поздняя');
+    }
+
     private function createAuthor(): Author
     {
         $author = new Author(['last_name' => 'Стругацкий', 'first_name' => 'Аркадий']);
         $author->save();
 
         return $author;
+    }
+
+    private function createBook(int $authorId, string $title, int $year, string $isbn): void
+    {
+        $book = new Book([
+            'title' => $title,
+            'year' => $year,
+            'isbn' => $isbn,
+            'authorIds' => [$authorId],
+        ]);
+        $book->save();
     }
 }

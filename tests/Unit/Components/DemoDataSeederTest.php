@@ -118,4 +118,38 @@ final class DemoDataSeederTest extends \Codeception\Test\Unit
         verify(Book::find()->count())->equals(0);
         verify(Author::find()->count())->equals(0);
     }
+
+    public function testSeedIfEmptyFillsEmptyCatalogue(): void
+    {
+        $result = (new DemoDataSeeder())->seedIfEmpty();
+
+        verify($result)->notNull();
+        verify(Book::find()->count())->greaterThan(0);
+    }
+
+    /**
+     * Команда вызывается из make init, где каталог может быть уже наполнен: чужие книги
+     * затирать нельзя.
+     */
+    public function testSeedIfEmptyKeepsExistingCatalogue(): void
+    {
+        $seeder = new DemoDataSeeder();
+        $seeder->seed();
+        $books = Book::find()->count();
+
+        verify($seeder->seedIfEmpty())->null();
+        verify(Book::find()->count())->equals($books);
+    }
+
+    public function testRefreshRecreatesCatalogue(): void
+    {
+        $seeder = new DemoDataSeeder();
+        $seeder->seed();
+        $books = Book::find()->count();
+
+        $result = $seeder->refresh();
+
+        verify($result['books'])->greaterThan(0);
+        verify(Book::find()->count())->equals($books);
+    }
 }
