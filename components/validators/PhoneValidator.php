@@ -50,6 +50,23 @@ final class PhoneValidator extends Validator
     }
 
     /**
+     * Номер для лога: видно, о какой подписке речь, но целиком он в файл не попадает.
+     *
+     * Телефон — единственное, что известно о госте, и хранить его в открытом виде
+     * в логах незачем.
+     */
+    public static function mask(string $phone): string
+    {
+        $digits = self::normalize($phone);
+
+        if (strlen($digits) <= 4) {
+            return str_repeat('*', strlen($digits));
+        }
+
+        return str_repeat('*', strlen($digits) - 4) . substr($digits, -4);
+    }
+
+    /**
      * Оставляет одни цифры и приводит российский номер с ведущей восьмёркой к виду с семёркой.
      */
     public static function normalize(string $value): string

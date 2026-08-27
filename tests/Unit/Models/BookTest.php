@@ -22,6 +22,25 @@ final class BookTest extends \Codeception\Test\Unit
         verify($book->hasErrors('cover_path'))->false();
     }
 
+    public function testRejectsTooLongDescription(): void
+    {
+        $book = $this->makeBook([
+            'description' => str_repeat('я', Book::MAX_DESCRIPTION_LENGTH + 1),
+        ]);
+
+        verify($book->validate())->false();
+        verify($book->hasErrors('description'))->true();
+    }
+
+    public function testAcceptsDescriptionAtTheLimit(): void
+    {
+        $book = $this->makeBook([
+            'description' => str_repeat('я', Book::MAX_DESCRIPTION_LENGTH),
+        ]);
+
+        verify($book->validate())->true();
+    }
+
     public function testRejectsYearBeforePrinting(): void
     {
         $book = $this->makeBook(['year' => Book::MIN_YEAR - 1]);

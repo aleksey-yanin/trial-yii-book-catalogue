@@ -86,6 +86,20 @@ final class PhoneValidatorTest extends \Codeception\Test\Unit
         verify($this->validate(['79991234567'])->hasErrors('phone'))->true();
     }
 
+    /**
+     * Телефон подписчика попадает в лог при неудачной отправке, и целиком его там
+     * быть не должно: последних четырёх цифр хватает, чтобы узнать номер в списке.
+     */
+    public function testMaskKeepsOnlyLastFourDigits(): void
+    {
+        verify(PhoneValidator::mask('+7 (999) 123-45-67'))->equals('*******4567');
+    }
+
+    public function testMaskHidesShortNumberEntirely(): void
+    {
+        verify(PhoneValidator::mask('1234'))->equals('****');
+    }
+
     private function validate(mixed $phone): DynamicModel
     {
         $model = new DynamicModel(['phone' => $phone]);

@@ -88,9 +88,13 @@ class User extends ActiveRecord implements IdentityInterface
         return $this->auth_key;
     }
 
+    /**
+     * Сравнение через compareString(): оно не зависит от длины совпавшего префикса
+     * и не даёт подбирать ключ по времени ответа.
+     */
     public function validateAuthKey($authKey): bool
     {
-        return $this->auth_key === $authKey;
+        return Yii::$app->security->compareString($this->auth_key, (string) $authKey);
     }
 
     /**

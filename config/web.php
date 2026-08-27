@@ -55,8 +55,10 @@ $config = [
             'apiKey' => getenv('SMSPILOT_API_KEY') ?: 'XXXXXXXXXXXXYYYYYYYYYYYYZZZZZZZZZZZZ',
         ],
         'request' => [
-            // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
-            'cookieValidationKey' => 'XqIKuESWexTfI-V63WA1UU89pAUgB1ih',
+            // Ключ подписывает cookie, в том числе `_identity` автологина, поэтому в исходниках
+            // ему не место: прежнее значение осталось в истории git и заменено. Дефолт —
+            // заведомая заглушка, чтобы забытый COOKIE_VALIDATION_KEY бросался в глаза.
+            'cookieValidationKey' => getenv('COOKIE_VALIDATION_KEY') ?: 'dev-only-key-replace-in-env',
         ],
         'cache' => [
             'class' => \yii\caching\FileCache::class,
@@ -75,6 +77,11 @@ $config = [
                 [
                     'class' => \yii\log\FileTarget::class,
                     'levels' => ['error', 'warning'],
+                    // По умолчанию Yii дописывает к каждой записи дамп $_SERVER, а в контейнере
+                    // там лежат DB_PASSWORD и SMSPILOT_API_KEY — секреты оказывались в файле
+                    // на диске. Заодно уходит $_POST, который уносил бы введённый пароль
+                    // с формы входа. Трассировка исключения от этого не страдает.
+                    'logVars' => [],
                 ],
             ],
         ],
@@ -92,8 +99,10 @@ $config = [
 ];
 
 if (YII_ENV_DEV) {
-    // Запрос приходит через FastCGI от контейнера nginx, поэтому REMOTE_ADDR — адрес
-    // из подсети docker, а не 127.0.0.1. Без этого Gii и Debug отдают 403.
+    // Запрос приходит через FastCGI от контейнера nginx, поэтому REMOTE_ADDR — всегда адрес
+    // этого контейнера, а не посетителя. Без расширенного списка Gii и Debug отдают 403,
+    // но и фильтровать по IP он здесь не может: адрес у всех один. Настоящий выключатель —
+    // YII_ENV, и он берётся из окружения (web/index.php), а не правится в коде.
     $devAllowedIPs = ['127.0.0.1', '::1', '172.*.*.*', '192.168.*.*', '10.*.*.*'];
 
     // configuration adjustments for 'dev' environment

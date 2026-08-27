@@ -7,6 +7,7 @@ namespace app\components\jobs;
 use Yii;
 use app\components\sms\SmsSendException;
 use app\components\sms\SmsSenderInterface;
+use app\components\validators\PhoneValidator;
 use app\models\Author;
 use app\models\Book;
 use app\models\Subscription;
@@ -106,7 +107,11 @@ class SendBookNotificationJob extends BaseObject implements RetryableJobInterfac
             return true;
         } catch (SmsSendException $exception) {
             Yii::error(
-                sprintf('Не удалось отправить SMS на %s: %s', $phone, $exception->getMessage()),
+                sprintf(
+                    'Не удалось отправить SMS на %s: %s',
+                    PhoneValidator::mask($phone),
+                    $exception->getMessage(),
+                ),
                 __METHOD__,
             );
 

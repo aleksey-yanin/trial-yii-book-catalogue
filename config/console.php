@@ -54,6 +54,9 @@ $config = [
                 [
                     'class' => \yii\log\FileTarget::class,
                     'levels' => ['error', 'warning'],
+                    // Причина та же, что в config/web.php: дамп $_SERVER уносил бы в лог
+                    // пароль БД и ключ SMS-шлюза.
+                    'logVars' => [],
                 ],
             ],
         ],

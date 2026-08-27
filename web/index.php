@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-// comment out the following two lines when deployed to production
-defined('YII_DEBUG') or define('YII_DEBUG', true);
-defined('YII_ENV') or define('YII_ENV', 'dev');
+// Режим задаётся окружением (docker-compose.yml), а не правкой этого файла: иначе
+// единственной защитой от трассировок и Gii на боевом сервере остаётся «не забыть
+// закомментировать две строки».
+defined('YII_DEBUG') or define('YII_DEBUG', (getenv('YII_DEBUG') ?: '1') === '1');
+defined('YII_ENV') or define('YII_ENV', getenv('YII_ENV') ?: 'dev');
 
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../vendor/yiisoft/yii2/Yii.php';
