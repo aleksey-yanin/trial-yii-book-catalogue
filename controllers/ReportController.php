@@ -13,7 +13,7 @@ use yii\web\Controller;
  * Фильтра доступа здесь намеренно нет: по ТЗ отчёт открыт всем, включая гостей.
  * В контроллерах книг и авторов AccessControl стоит именно потому, что там есть что закрывать.
  */
-class ReportController extends Controller
+final class ReportController extends Controller
 {
     public function actionTopAuthors(): string
     {

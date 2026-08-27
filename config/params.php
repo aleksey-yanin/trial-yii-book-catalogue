@@ -1,7 +1,8 @@
 <?php
 
+/**
+ * Параметры приложения. Демонстрационные адреса шаблона убраны: почта в проекте
+ * не отправляется, и ни одна из этих настроек нигде не читалась.
+ */
 return [
-    'adminEmail' => 'admin@example.com',
-    'senderEmail' => 'noreply@example.com',
-    'senderName' => 'Example.com mailer',
 ];
